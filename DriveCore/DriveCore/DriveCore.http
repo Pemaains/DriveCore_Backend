@@ -1,0 +1,6 @@
+@DriveCore_HostAddress = http://localhost:5089
+
+GET {{DriveCore_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

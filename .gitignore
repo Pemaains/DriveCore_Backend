@@ -1,0 +1,45 @@
+# Build results
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio
+.vs/
+.vscode/
+
+# Build folders
+[Bb]in/
+[Oo]bj/
+
+# Logs
+*.log
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# Publish output
+publish/
+
+# Dotnet
+*.dll
+*.exe
+*.pdb
+
+# Rider / JetBrains
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Secrets (IMPORTANT)
+appsettings.Development.json
+secrets.json
+
+# EF Core
+Migrations/*.Designer.cs
