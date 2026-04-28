@@ -1,16 +1,59 @@
 ﻿using DriveCore.Models;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace DriveCore.Data
 {
     public class AppDbContext(DbContextOptions<AppDbContext> options)
-        : IdentityDbContext<IdentityUser>(options)
+        : IdentityDbContext<ApplicationUser>(options)
     {
-        // DbSets will be added here as we create models
-        public DbSet<Appointment> Appointments { get; set; }
-        public DbSet<PartRequest> PartRequests { get; set; }
-        public DbSet<Review> Reviews { get; set; }
+        public DbSet<StaffProfile> StaffProfiles => Set<StaffProfile>();
+        public DbSet<CustomerProfile> CustomerProfiles => Set<CustomerProfile>();
+        public DbSet<Vehicle> Vehicles => Set<Vehicle>();
+        public DbSet<Appointment> Appointments => Set<Appointment>();
+        public DbSet<PartRequest> PartRequests => Set<PartRequest>();
+        public DbSet<Review> Reviews => Set<Review>();
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+
+            builder.Entity<ApplicationUser>()
+                .Property(user => user.Role)
+                .HasConversion<string>()
+                .HasMaxLength(20);
+
+            builder.Entity<StaffProfile>()
+                .HasIndex(staff => staff.StaffCode)
+                .IsUnique();
+
+            builder.Entity<StaffProfile>()
+                .HasOne(staff => staff.User)
+                .WithOne(user => user.StaffProfile)
+                .HasForeignKey<StaffProfile>(staff => staff.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<CustomerProfile>()
+                .HasOne(customer => customer.User)
+                .WithOne(user => user.CustomerProfile)
+                .HasForeignKey<CustomerProfile>(customer => customer.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<CustomerProfile>()
+                .HasOne(customer => customer.CreatedByStaff)
+                .WithMany()
+                .HasForeignKey(customer => customer.CreatedByStaffId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            builder.Entity<Vehicle>()
+                .HasIndex(vehicle => vehicle.VehicleNumber)
+                .IsUnique();
+
+            builder.Entity<Vehicle>()
+                .HasOne(vehicle => vehicle.CustomerProfile)
+                .WithMany(customer => customer.Vehicles)
+                .HasForeignKey(vehicle => vehicle.CustomerProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+        }
     }
 }
