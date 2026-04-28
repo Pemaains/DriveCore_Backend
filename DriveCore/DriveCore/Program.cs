@@ -2,6 +2,7 @@ using DriveCore.Data;
 using DriveCore.Models;
 using DriveCore.Services.Implementations;
 using DriveCore.Services.Interfaces;
+using DriveCore.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -54,6 +55,9 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddScoped<IStaffService, StaffService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddScoped<ISalesService, SalesService>();
+builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 
 // CORS - Allow React frontend
 builder.Services.AddCors(options =>
@@ -91,6 +95,7 @@ app.Lifetime.ApplicationStarted.Register(() =>
         {
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             foreach (var role in Enum.GetNames<UserRole>())
             {
@@ -127,6 +132,8 @@ app.Lifetime.ApplicationStarted.Register(() =>
                     }
                 }
             }
+
+            await SeedData.SeedAsync(context, userManager, builder.Configuration);
         }
         catch (Exception ex)
         {

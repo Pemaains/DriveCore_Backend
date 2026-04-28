@@ -18,5 +18,7 @@ namespace DriveCore.Models
         [Required]
         [MaxLength(80)]
         public string Position { get; set; } = string.Empty;
+
+        public ICollection<SalesInvoice> SalesInvoices { get; set; } = new List<SalesInvoice>();
     }
 }

@@ -102,6 +102,19 @@ namespace DriveCore.Services.Implementations
                 : ServiceResult<CustomerResponse>.Ok(MapCustomer(customer));
         }
 
+        public async Task<ServiceResult<CustomerDetailResponse>> GetCustomerDetailAsync(int id)
+        {
+            var customer = await _context.CustomerProfiles
+                .Include(profile => profile.User)
+                .Include(profile => profile.Vehicles)
+                .Include(profile => profile.SalesInvoices)
+                .FirstOrDefaultAsync(profile => profile.Id == id);
+
+            return customer is null
+                ? ServiceResult<CustomerDetailResponse>.Fail("Customer was not found.")
+                : ServiceResult<CustomerDetailResponse>.Ok(MapCustomerDetail(customer));
+        }
+
         public async Task<ServiceResult<VehicleResponse>> AddVehicleAsync(int customerId, CreateVehicleRequest request)
         {
             var customerExists = await _context.CustomerProfiles.AnyAsync(customer => customer.Id == customerId);
@@ -146,6 +159,37 @@ namespace DriveCore.Services.Implementations
                 Address = customer.Address,
                 CreatedByStaffId = customer.CreatedByStaffId,
                 Vehicles = customer.Vehicles.Select(MapVehicle).ToList()
+            };
+        }
+
+        private static CustomerDetailResponse MapCustomerDetail(CustomerProfile customer)
+        {
+            return new CustomerDetailResponse
+            {
+                UserId = customer.UserId,
+                CustomerProfileId = customer.Id,
+                FullName = customer.User.FullName,
+                Email = customer.User.Email ?? string.Empty,
+                PhoneNumber = customer.User.PhoneNumber,
+                Address = customer.Address,
+                CreatedByStaffId = customer.CreatedByStaffId,
+                Vehicles = customer.Vehicles.Select(MapVehicle).ToList(),
+                Invoices = customer.SalesInvoices
+                    .OrderByDescending(invoice => invoice.CreatedAt)
+                    .Select(MapInvoiceSummary)
+                    .ToList()
+            };
+        }
+
+        private static SalesInvoiceSummaryResponse MapInvoiceSummary(SalesInvoice invoice)
+        {
+            return new SalesInvoiceSummaryResponse
+            {
+                Id = invoice.Id,
+                InvoiceNumber = invoice.InvoiceNumber,
+                CreatedAt = invoice.CreatedAt,
+                TotalAmount = invoice.TotalAmount,
+                VehicleId = invoice.VehicleId
             };
         }
 
