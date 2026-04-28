@@ -19,7 +19,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Controllers\" />
       <Folder Include="Dtos\Request\" />
       <Folder Include="Dtos\Response\" />
       <Folder Include="Services\Implmentations\" />
