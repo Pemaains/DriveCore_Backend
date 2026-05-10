@@ -16,6 +16,22 @@ namespace DriveCore.Controllers
             _authService = authService;
         }
 
+        [HttpPost("register")]
+        public async Task<IActionResult> Register(RegisterRequest request)
+        {
+            var result = await _authService.RegisterAsync(request);
+            if (!result.Success)
+            {
+                return BadRequest(new ErrorResponse
+                {
+                    Message = result.Message,
+                    Errors = result.Errors
+                });
+            }
+
+            return Ok(result.Data);
+        }
+
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequest request)
         {

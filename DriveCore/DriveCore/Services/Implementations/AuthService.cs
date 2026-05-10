@@ -48,6 +48,46 @@ namespace DriveCore.Services.Implementations
             });
         }
 
+        public async Task<ServiceResult<AuthResponse>> RegisterAsync(RegisterRequest request)
+        {
+            var email = request.Email.Trim();
+
+            var existingUser = await _userManager.FindByEmailAsync(email);
+            if (existingUser is not null)
+            {
+                return ServiceResult<AuthResponse>.Fail("An account with this email already exists.");
+            }
+
+            var user = new ApplicationUser
+            {
+                FullName = request.FullName.Trim(),
+                Email = email,
+                UserName = email,
+                PhoneNumber = request.PhoneNumber.Trim(),
+                Role = UserRole.Customer,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var result = await _userManager.CreateAsync(user, request.Password);
+            if (!result.Succeeded)
+            {
+                var errors = result.Errors.Select(e => e.Description).ToList();
+                return ServiceResult<AuthResponse>.Fail("Registration failed.", errors);
+            }
+
+            await _userManager.AddToRoleAsync(user, UserRole.Customer.ToString());
+
+            return ServiceResult<AuthResponse>.Ok(new AuthResponse
+            {
+                Token = CreateToken(user),
+                UserId = user.Id,
+                FullName = user.FullName,
+                Email = user.Email ?? string.Empty,
+                Role = user.Role
+            });
+        }
+
         private string CreateToken(ApplicationUser user)
         {
             var email = user.Email ?? string.Empty;
