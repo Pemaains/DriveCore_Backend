@@ -13,6 +13,7 @@ namespace DriveCore.Data
         public DbSet<Appointment> Appointments => Set<Appointment>();
         public DbSet<PartRequest> PartRequests => Set<PartRequest>();
         public DbSet<Review> Reviews => Set<Review>();
+        public DbSet<LowStockNotification> LowStockNotifications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
