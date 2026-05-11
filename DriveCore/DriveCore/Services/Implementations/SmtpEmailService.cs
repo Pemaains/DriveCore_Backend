@@ -41,5 +41,17 @@ namespace DriveCore.Services.Implementations
 
             await client.SendMailAsync(message);
         }
+
+        public Task SendEmailAsync(string toEmail, string toName, string subject, string body)
+        {
+            return SendAsync(toEmail, subject, body);
+        }
+
+        public Task SendCreditReminderAsync(string toEmail, string toName, decimal amountOwed, DateTime dueDate)
+        {
+            var subject = "DriveCore — Overdue Credit Payment Reminder";
+            var body = $"Hello {toName},\n\nYour outstanding balance is {amountOwed:C} and was due on {dueDate:yyyy-MM-dd}.\n\nPlease settle this balance at your earliest convenience.\n\nDriveCore";
+            return SendAsync(toEmail, subject, body);
+        }
     }
 }

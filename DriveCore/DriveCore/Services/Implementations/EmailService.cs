@@ -45,6 +45,12 @@ namespace DriveCore.Services.Implementations
             await smtp.DisconnectAsync(true);
         }
 
+        public Task SendAsync(string toEmail, string subject, string body)
+        {
+            var toName = string.IsNullOrWhiteSpace(toEmail) ? "Customer" : toEmail;
+            return SendEmailAsync(toEmail, toName, subject, body);
+        }
+
         public async Task SendCreditReminderAsync(string toEmail, string toName, decimal amountOwed, DateTime dueDate)
         {
             var subject = "DriveCore — Overdue Credit Payment Reminder";
