@@ -14,6 +14,7 @@ namespace DriveCore.Data
         public DbSet<PartRequest> PartRequests => Set<PartRequest>();
         public DbSet<Review> Reviews => Set<Review>();
         public DbSet<LowStockNotification> LowStockNotifications { get; set; }
+        public DbSet<LoyaltyProgram> LoyaltyPrograms { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
