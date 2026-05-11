@@ -7,6 +7,7 @@ namespace DriveCore.Services.Interfaces
     {
         Task<ServiceResult<CustomerResponse>> CreateCustomerAsync(CreateCustomerRequest request, string? createdByStaffId);
         Task<ServiceResult<CustomerResponse>> GetCustomerByIdAsync(int id);
+        Task<ServiceResult<CustomerDetailResponse>> GetCustomerDetailAsync(int id);
         Task<ServiceResult<VehicleResponse>> AddVehicleAsync(int customerId, CreateVehicleRequest request);
     }
 }

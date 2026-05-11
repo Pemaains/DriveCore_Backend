@@ -45,6 +45,18 @@ namespace DriveCore.Controllers
             return Ok(result.Data);
         }
 
+        [HttpGet("{id:int}/details")]
+        public async Task<IActionResult> GetCustomerDetails(int id)
+        {
+            var result = await _customerService.GetCustomerDetailAsync(id);
+            if (!result.Success)
+            {
+                return NotFound(ToErrorResponse(result));
+            }
+
+            return Ok(result.Data);
+        }
+
         [HttpPost("{customerId:int}/vehicles")]
         public async Task<IActionResult> AddVehicle(int customerId, CreateVehicleRequest request)
         {

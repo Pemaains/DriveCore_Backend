@@ -1,6 +1,7 @@
 using DriveCore.Data;
 using DriveCore.Dtos.Response;
 using DriveCore.Models;
+using DriveCore.Services;
 using DriveCore.Services.Implementations;
 using DriveCore.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -113,6 +114,9 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IStaffService, StaffService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddScoped<ISalesService, SalesService>();
+builder.Services.AddScoped<IEmailService, SmtpEmailService>();
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 
 // CORS - Allow React frontend
 builder.Services.AddCors(options =>

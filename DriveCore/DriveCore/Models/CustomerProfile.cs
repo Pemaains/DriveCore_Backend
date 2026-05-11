@@ -20,5 +20,7 @@ namespace DriveCore.Models
         public ApplicationUser? CreatedByStaff { get; set; }
 
         public ICollection<Vehicle> Vehicles { get; set; } = new List<Vehicle>();
+
+        public ICollection<SalesInvoice> SalesInvoices { get; set; } = new List<SalesInvoice>();
     }
 }

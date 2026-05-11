@@ -27,5 +27,7 @@ namespace DriveCore.Models
 
         [MaxLength(40)]
         public string? Color { get; set; }
+
+        public ICollection<SalesInvoice> SalesInvoices { get; set; } = new List<SalesInvoice>();
     }
 }
