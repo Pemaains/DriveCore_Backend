@@ -13,6 +13,8 @@ namespace DriveCore.Data
         public DbSet<Appointment> Appointments => Set<Appointment>();
         public DbSet<PartRequest> PartRequests => Set<PartRequest>();
         public DbSet<Review> Reviews => Set<Review>();
+        public DbSet<LowStockNotification> LowStockNotifications { get; set; }
+        public DbSet<LoyaltyProgram> LoyaltyPrograms { get; set; }
         public DbSet<Part> Parts => Set<Part>();
         public DbSet<SalesInvoice> SalesInvoices => Set<SalesInvoice>();
         public DbSet<SalesInvoiceItem> SalesInvoiceItems => Set<SalesInvoiceItem>();
