@@ -9,6 +9,7 @@ namespace DriveCore.Controllers
 {
     [ApiController]
     [Route("api/staff/customers")]
+    [Authorize(Roles = "Staff")]
     public class StaffCustomersController : ControllerBase
     {
         private readonly ICustomerService _customerService;

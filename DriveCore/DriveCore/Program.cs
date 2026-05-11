@@ -1,4 +1,5 @@
 using DriveCore.Data;
+using DriveCore.Dtos.Response;
 using DriveCore.Models;
 using DriveCore.Services.Implementations;
 using DriveCore.Services.Interfaces;
@@ -7,6 +8,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
 
@@ -21,7 +24,34 @@ builder.Services.AddControllers()
 
 // Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    // Allows Swagger UI to send Authorization: Bearer {token} for protected endpoints.
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Paste a JWT token from /api/auth/login."
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 // Database - PostgreSQL
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -49,10 +79,39 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+        RoleClaimType = ClaimTypes.Role,
+        NameClaimType = ClaimTypes.NameIdentifier,
+        ClockSkew = TimeSpan.Zero
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnChallenge = async context =>
+        {
+            context.HandleResponse();
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.ContentType = "application/json";
+
+            await context.Response.WriteAsJsonAsync(new ErrorResponse
+            {
+                Message = "Unauthorized"
+            });
+        },
+        OnForbidden = async context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            context.Response.ContentType = "application/json";
+
+            await context.Response.WriteAsJsonAsync(new ErrorResponse
+            {
+                Message = "Forbidden"
+            });
+        }
     };
 });
 
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IStaffService, StaffService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<ISalesService, SalesService>();

@@ -30,6 +30,9 @@ namespace DriveCore.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(Appointment appointment)
         {
+            appointment.AppointmentDate = DateTime.SpecifyKind(appointment.AppointmentDate, DateTimeKind.Utc);
+            appointment.CreatedAt = DateTime.UtcNow;
+
             context.Appointments.Add(appointment);
             await context.SaveChangesAsync();
             return CreatedAtAction(nameof(GetById), new { id = appointment.Id }, appointment);
@@ -42,7 +45,7 @@ namespace DriveCore.Controllers
             var appointment = await context.Appointments.FindAsync(id);
             if (appointment == null) return NotFound();
 
-            appointment.AppointmentDate = updated.AppointmentDate;
+            appointment.AppointmentDate = DateTime.SpecifyKind(updated.AppointmentDate, DateTimeKind.Utc);
             appointment.ServiceType = updated.ServiceType;
             appointment.Status = updated.Status;
             appointment.Notes = updated.Notes;
