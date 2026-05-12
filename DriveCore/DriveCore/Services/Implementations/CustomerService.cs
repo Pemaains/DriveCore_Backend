@@ -147,6 +147,132 @@ namespace DriveCore.Services.Implementations
             return ServiceResult<VehicleResponse>.Ok(MapVehicle(vehicle), "Vehicle added successfully.");
         }
 
+        public async Task<ServiceResult<CustomerResponse>> GetCurrentCustomerAsync(string userId)
+        {
+            var customer = await FindCustomerByUserIdAsync(userId);
+
+            return customer is null
+                ? ServiceResult<CustomerResponse>.Fail("Customer profile was not found.")
+                : ServiceResult<CustomerResponse>.Ok(MapCustomer(customer));
+        }
+
+        public async Task<ServiceResult<CustomerResponse>> UpdateCurrentCustomerAsync(string userId, UpdateCustomerProfileRequest request)
+        {
+            var customer = await FindCustomerByUserIdAsync(userId);
+            if (customer is null)
+            {
+                return ServiceResult<CustomerResponse>.Fail("Customer profile was not found.");
+            }
+
+            customer.User.FullName = request.FullName.Trim();
+            customer.User.PhoneNumber = request.PhoneNumber.Trim();
+            customer.Address = request.Address.Trim();
+
+            await _context.SaveChangesAsync();
+
+            return ServiceResult<CustomerResponse>.Ok(MapCustomer(customer), "Profile updated successfully.");
+        }
+
+        public async Task<ServiceResult<VehicleResponse>> AddCurrentCustomerVehicleAsync(string userId, CreateVehicleRequest request)
+        {
+            var customer = await FindCustomerByUserIdAsync(userId);
+            if (customer is null)
+            {
+                return ServiceResult<VehicleResponse>.Fail("Customer profile was not found.");
+            }
+
+            var vehicleNumber = request.VehicleNumber.Trim();
+            var vehicleExists = await _context.Vehicles
+                .AnyAsync(vehicle => vehicle.VehicleNumber == vehicleNumber);
+
+            if (vehicleExists)
+            {
+                return ServiceResult<VehicleResponse>.Fail("Vehicle number is already registered.");
+            }
+
+            var vehicle = new Vehicle
+            {
+                CustomerProfileId = customer.Id,
+                VehicleNumber = vehicleNumber,
+                Brand = request.Brand.Trim(),
+                Model = request.Model.Trim(),
+                Year = request.Year,
+                Color = request.Color?.Trim()
+            };
+
+            _context.Vehicles.Add(vehicle);
+            await _context.SaveChangesAsync();
+
+            return ServiceResult<VehicleResponse>.Ok(MapVehicle(vehicle), "Vehicle added successfully.");
+        }
+
+        public async Task<ServiceResult<VehicleResponse>> UpdateCurrentCustomerVehicleAsync(string userId, int vehicleId, UpdateVehicleRequest request)
+        {
+            var customer = await FindCustomerByUserIdAsync(userId);
+            if (customer is null)
+            {
+                return ServiceResult<VehicleResponse>.Fail("Customer profile was not found.");
+            }
+
+            var vehicle = customer.Vehicles.FirstOrDefault(item => item.Id == vehicleId);
+            if (vehicle is null)
+            {
+                return ServiceResult<VehicleResponse>.Fail("Vehicle was not found.");
+            }
+
+            var vehicleNumber = request.VehicleNumber.Trim();
+            var vehicleExists = await _context.Vehicles
+                .AnyAsync(item => item.Id != vehicleId && item.VehicleNumber == vehicleNumber);
+
+            if (vehicleExists)
+            {
+                return ServiceResult<VehicleResponse>.Fail("Vehicle number is already registered.");
+            }
+
+            vehicle.VehicleNumber = vehicleNumber;
+            vehicle.Brand = request.Brand.Trim();
+            vehicle.Model = request.Model.Trim();
+            vehicle.Year = request.Year;
+            vehicle.Color = request.Color?.Trim();
+
+            await _context.SaveChangesAsync();
+
+            return ServiceResult<VehicleResponse>.Ok(MapVehicle(vehicle), "Vehicle updated successfully.");
+        }
+
+        public async Task<ServiceResult<bool>> DeleteCurrentCustomerVehicleAsync(string userId, int vehicleId)
+        {
+            var customer = await FindCustomerByUserIdAsync(userId);
+            if (customer is null)
+            {
+                return ServiceResult<bool>.Fail("Customer profile was not found.");
+            }
+
+            var vehicle = customer.Vehicles.FirstOrDefault(item => item.Id == vehicleId);
+            if (vehicle is null)
+            {
+                return ServiceResult<bool>.Fail("Vehicle was not found.");
+            }
+
+            if (customer.Vehicles.Count <= 1)
+            {
+                return ServiceResult<bool>.Fail("At least one vehicle is required.");
+            }
+
+            _context.Vehicles.Remove(vehicle);
+            await _context.SaveChangesAsync();
+
+            return ServiceResult<bool>.Ok(true, "Vehicle deleted successfully.");
+        }
+
+        private async Task<CustomerProfile?> FindCustomerByUserIdAsync(string userId)
+        {
+            return await _context.CustomerProfiles
+                .Include(profile => profile.User)
+                .Include(profile => profile.Vehicles)
+                .FirstOrDefaultAsync(profile => profile.UserId == userId);
+        }
+
         private static CustomerResponse MapCustomer(CustomerProfile customer)
         {
             return new CustomerResponse

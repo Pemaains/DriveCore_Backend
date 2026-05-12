@@ -19,5 +19,13 @@ namespace DriveCore.Dtos.Request
         [Required]
         [MinLength(6)]
         public string Password { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(250)]
+        public string Address { get; set; } = string.Empty;
+
+        [Required]
+        [MinLength(1, ErrorMessage = "At least one vehicle is required.")]
+        public List<CreateVehicleRequest> Vehicles { get; set; } = new();
     }
 }

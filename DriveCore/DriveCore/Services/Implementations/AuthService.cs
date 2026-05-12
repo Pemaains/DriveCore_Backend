@@ -1,8 +1,10 @@
+using DriveCore.Data;
 using DriveCore.Dtos.Request;
 using DriveCore.Dtos.Response;
 using DriveCore.Models;
 using DriveCore.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -14,11 +16,13 @@ namespace DriveCore.Services.Implementations
     {
         private const int DefaultExpiryMinutes = 240;
 
+        private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly UserManager<ApplicationUser> _userManager;
 
-        public AuthService(IConfiguration configuration, UserManager<ApplicationUser> userManager)
+        public AuthService(AppDbContext context, IConfiguration configuration, UserManager<ApplicationUser> userManager)
         {
+            _context = context;
             _configuration = configuration;
             _userManager = userManager;
         }
@@ -38,24 +42,44 @@ namespace DriveCore.Services.Implementations
                 return ServiceResult<AuthResponse>.Fail("Account is inactive");
             }
 
-            return ServiceResult<AuthResponse>.Ok(new AuthResponse
-            {
-                Token = CreateToken(user),
-                UserId = user.Id,
-                FullName = user.FullName,
-                Email = user.Email ?? string.Empty,
-                Role = user.Role
-            });
+            return ServiceResult<AuthResponse>.Ok(MapAuth(user));
         }
 
         public async Task<ServiceResult<AuthResponse>> RegisterAsync(RegisterRequest request)
         {
+            if (request.Vehicles is null || request.Vehicles.Count == 0)
+            {
+                return ServiceResult<AuthResponse>.Fail("At least one vehicle is required.");
+            }
+
             var email = request.Email.Trim();
 
             var existingUser = await _userManager.FindByEmailAsync(email);
             if (existingUser is not null)
             {
                 return ServiceResult<AuthResponse>.Fail("An account with this email already exists.");
+            }
+
+            var duplicateVehicleNumbers = request.Vehicles
+                .GroupBy(vehicle => vehicle.VehicleNumber.Trim().ToUpperInvariant())
+                .Where(group => group.Count() > 1)
+                .Select(group => group.Key)
+                .ToList();
+
+            if (duplicateVehicleNumbers.Any())
+            {
+                return ServiceResult<AuthResponse>.Fail("Duplicate vehicle numbers were provided.", duplicateVehicleNumbers);
+            }
+
+            var vehicleNumbers = request.Vehicles
+                .Select(vehicle => vehicle.VehicleNumber.Trim())
+                .ToList();
+            var vehicleExists = await _context.Vehicles
+                .AnyAsync(vehicle => vehicleNumbers.Contains(vehicle.VehicleNumber));
+
+            if (vehicleExists)
+            {
+                return ServiceResult<AuthResponse>.Fail("One or more vehicle numbers are already registered.");
             }
 
             var user = new ApplicationUser
@@ -76,16 +100,45 @@ namespace DriveCore.Services.Implementations
                 return ServiceResult<AuthResponse>.Fail("Registration failed.", errors);
             }
 
-            await _userManager.AddToRoleAsync(user, UserRole.Customer.ToString());
+            var roleResult = await _userManager.AddToRoleAsync(user, UserRole.Customer.ToString());
+            if (!roleResult.Succeeded)
+            {
+                await _userManager.DeleteAsync(user);
+                return ServiceResult<AuthResponse>.Fail(
+                    "Registration failed.",
+                    roleResult.Errors.Select(error => error.Description));
+            }
 
-            return ServiceResult<AuthResponse>.Ok(new AuthResponse
+            var customerProfile = new CustomerProfile
+            {
+                UserId = user.Id,
+                Address = request.Address.Trim(),
+                Vehicles = request.Vehicles.Select(vehicle => new Vehicle
+                {
+                    VehicleNumber = vehicle.VehicleNumber.Trim(),
+                    Brand = vehicle.Brand.Trim(),
+                    Model = vehicle.Model.Trim(),
+                    Year = vehicle.Year,
+                    Color = vehicle.Color?.Trim()
+                }).ToList()
+            };
+
+            _context.CustomerProfiles.Add(customerProfile);
+            await _context.SaveChangesAsync();
+
+            return ServiceResult<AuthResponse>.Ok(MapAuth(user), "Customer account registered successfully.");
+        }
+
+        private AuthResponse MapAuth(ApplicationUser user)
+        {
+            return new AuthResponse
             {
                 Token = CreateToken(user),
                 UserId = user.Id,
                 FullName = user.FullName,
                 Email = user.Email ?? string.Empty,
                 Role = user.Role
-            });
+            };
         }
 
         private string CreateToken(ApplicationUser user)
