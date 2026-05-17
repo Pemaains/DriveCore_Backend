@@ -158,7 +158,8 @@ namespace DriveCore.Services.Implementations
         }
 
         public async Task<ServiceResult<bool>> SendInvoiceAsync(int id)
-        {
+            {
+
             var invoice = await _context.SalesInvoices
                 .Include(sales => sales.CustomerProfile)
                     .ThenInclude(profile => profile.User)

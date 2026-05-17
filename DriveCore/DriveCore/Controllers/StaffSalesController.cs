@@ -69,13 +69,20 @@ namespace DriveCore.Controllers
         [HttpPost("invoices/{id:int}/send")]
         public async Task<IActionResult> SendInvoice(int id)
         {
-            var result = await _salesService.SendInvoiceAsync(id);
-            if (!result.Success)
+            try
             {
-                return BadRequest(ToErrorResponse(result));
-            }
+                var result = await _salesService.SendInvoiceAsync(id);
+                if (!result.Success)
+                {
+                    return BadRequest(ToErrorResponse(result));
+                }
 
-            return Ok(new { message = result.Message });
+                return Ok(new { message = result.Message });
+            }catch(Exception ex)
+            {
+                throw new Exception("Something went wrong in the controller");
+            }
+            
         }
 
         private static ErrorResponse ToErrorResponse<T>(Services.ServiceResult<T> result)
