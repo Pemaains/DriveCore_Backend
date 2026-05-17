@@ -79,6 +79,18 @@ namespace DriveCore.Controllers
             return NoContent();
         }
 
+        [HttpGet("me/history")]
+        public async Task<IActionResult> GetHistory()
+        {
+            var result = await _customerService.GetCurrentCustomerHistoryAsync(GetUserId());
+            if (!result.Success)
+            {
+                return NotFound(ToErrorResponse(result));
+            }
+
+            return Ok(result.Data);
+        }
+
         private string GetUserId()
         {
             return User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
