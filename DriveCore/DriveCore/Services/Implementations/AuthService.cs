@@ -47,39 +47,12 @@ namespace DriveCore.Services.Implementations
 
         public async Task<ServiceResult<AuthResponse>> RegisterAsync(RegisterRequest request)
         {
-            if (request.Vehicles is null || request.Vehicles.Count == 0)
-            {
-                return ServiceResult<AuthResponse>.Fail("At least one vehicle is required.");
-            }
-
             var email = request.Email.Trim();
 
             var existingUser = await _userManager.FindByEmailAsync(email);
             if (existingUser is not null)
             {
                 return ServiceResult<AuthResponse>.Fail("An account with this email already exists.");
-            }
-
-            var duplicateVehicleNumbers = request.Vehicles
-                .GroupBy(vehicle => vehicle.VehicleNumber.Trim().ToUpperInvariant())
-                .Where(group => group.Count() > 1)
-                .Select(group => group.Key)
-                .ToList();
-
-            if (duplicateVehicleNumbers.Any())
-            {
-                return ServiceResult<AuthResponse>.Fail("Duplicate vehicle numbers were provided.", duplicateVehicleNumbers);
-            }
-
-            var vehicleNumbers = request.Vehicles
-                .Select(vehicle => vehicle.VehicleNumber.Trim())
-                .ToList();
-            var vehicleExists = await _context.Vehicles
-                .AnyAsync(vehicle => vehicleNumbers.Contains(vehicle.VehicleNumber));
-
-            if (vehicleExists)
-            {
-                return ServiceResult<AuthResponse>.Fail("One or more vehicle numbers are already registered.");
             }
 
             var user = new ApplicationUser
@@ -100,33 +73,9 @@ namespace DriveCore.Services.Implementations
                 return ServiceResult<AuthResponse>.Fail("Registration failed.", errors);
             }
 
-            var roleResult = await _userManager.AddToRoleAsync(user, UserRole.Customer.ToString());
-            if (!roleResult.Succeeded)
-            {
-                await _userManager.DeleteAsync(user);
-                return ServiceResult<AuthResponse>.Fail(
-                    "Registration failed.",
-                    roleResult.Errors.Select(error => error.Description));
-            }
+            await _userManager.AddToRoleAsync(user, UserRole.Customer.ToString());
 
-            var customerProfile = new CustomerProfile
-            {
-                UserId = user.Id,
-                Address = request.Address.Trim(),
-                Vehicles = request.Vehicles.Select(vehicle => new Vehicle
-                {
-                    VehicleNumber = vehicle.VehicleNumber.Trim(),
-                    Brand = vehicle.Brand.Trim(),
-                    Model = vehicle.Model.Trim(),
-                    Year = vehicle.Year,
-                    Color = vehicle.Color?.Trim()
-                }).ToList()
-            };
-
-            _context.CustomerProfiles.Add(customerProfile);
-            await _context.SaveChangesAsync();
-
-            return ServiceResult<AuthResponse>.Ok(MapAuth(user), "Customer account registered successfully.");
+            return ServiceResult<AuthResponse>.Ok(MapAuth(user));
         }
 
         private AuthResponse MapAuth(ApplicationUser user)
