@@ -265,6 +265,73 @@ namespace DriveCore.Services.Implementations
             return ServiceResult<bool>.Ok(true, "Vehicle deleted successfully.");
         }
 
+        public async Task<ServiceResult<CustomerHistoryResponse>> GetCurrentCustomerHistoryAsync(string userId)
+        {
+            var customer = await _context.CustomerProfiles
+                .Include(profile => profile.User)
+                .Include(profile => profile.SalesInvoices)
+                    .ThenInclude(invoice => invoice.Vehicle)
+                .Include(profile => profile.SalesInvoices)
+                    .ThenInclude(invoice => invoice.Items)
+                        .ThenInclude(item => item.Part)
+                .FirstOrDefaultAsync(profile => profile.UserId == userId);
+
+            if (customer is null)
+            {
+                return ServiceResult<CustomerHistoryResponse>.Fail("Customer profile was not found.");
+            }
+
+            var appointmentCustomerKeys = new[] { customer.UserId, customer.Id.ToString() };
+            var appointments = await _context.Appointments
+                .Where(appointment => appointmentCustomerKeys.Contains(appointment.CustomerId))
+                .OrderByDescending(appointment => appointment.AppointmentDate)
+                .ToListAsync();
+
+            return ServiceResult<CustomerHistoryResponse>.Ok(new CustomerHistoryResponse
+            {
+                CustomerProfileId = customer.Id,
+                FullName = customer.User.FullName,
+                GeneratedAt = DateTime.UtcNow,
+                TotalPurchaseCount = customer.SalesInvoices.Count,
+                TotalPurchaseAmount = customer.SalesInvoices.Sum(invoice => invoice.TotalAmount),
+                TotalServiceCount = appointments.Count,
+                Purchases = customer.SalesInvoices
+                    .OrderByDescending(invoice => invoice.CreatedAt)
+                    .Select(invoice => new PurchaseHistoryItemResponse
+                    {
+                        Id = invoice.Id,
+                        InvoiceNumber = invoice.InvoiceNumber,
+                        CreatedAt = invoice.CreatedAt,
+                        TotalAmount = invoice.TotalAmount,
+                        VehicleId = invoice.VehicleId,
+                        VehicleNumber = invoice.Vehicle?.VehicleNumber,
+                        Items = invoice.Items
+                            .OrderBy(item => item.Part.Name)
+                            .Select(item => new PurchaseHistoryLineItemResponse
+                            {
+                                PartId = item.PartId,
+                                PartName = item.Part.Name,
+                                Quantity = item.Quantity,
+                                UnitPrice = item.UnitPrice,
+                                LineTotal = item.LineTotal
+                            })
+                            .ToList()
+                    })
+                    .ToList(),
+                Services = appointments
+                    .Select(appointment => new ServiceHistoryItemResponse
+                    {
+                        Id = appointment.Id,
+                        AppointmentDate = appointment.AppointmentDate,
+                        ServiceType = appointment.ServiceType,
+                        Status = appointment.Status,
+                        Notes = appointment.Notes,
+                        CreatedAt = appointment.CreatedAt
+                    })
+                    .ToList()
+            });
+        }
+
         private async Task<CustomerProfile?> FindCustomerByUserIdAsync(string userId)
         {
             return await _context.CustomerProfiles
