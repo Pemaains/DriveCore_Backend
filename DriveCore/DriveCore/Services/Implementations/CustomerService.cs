@@ -8,17 +8,28 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DriveCore.Services.Implementations
 {
+    /// <summary>
+    /// Provides customer profile, vehicle, and history operations for the API.
+    /// </summary>
     public class CustomerService : ICustomerService
     {
         private readonly AppDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CustomerService"/> class.
+        /// </summary>
+        /// <param name="context">The application database context.</param>
+        /// <param name="userManager">The ASP.NET Identity user manager.</param>
         public CustomerService(AppDbContext context, UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _userManager = userManager;
         }
 
+        #region Staff Customer Management
+
+        /// <inheritdoc />
         public async Task<ServiceResult<CustomerResponse>> CreateCustomerAsync(CreateCustomerRequest request, string? createdByStaffId)
         {
             var emailExists = await _userManager.FindByEmailAsync(request.Email);
@@ -90,6 +101,7 @@ namespace DriveCore.Services.Implementations
             return ServiceResult<CustomerResponse>.Ok(MapCustomer(customerProfile), "Customer registered successfully.");
         }
 
+        /// <inheritdoc />
         public async Task<ServiceResult<CustomerResponse>> GetCustomerByIdAsync(int id)
         {
             var customer = await _context.CustomerProfiles
@@ -102,6 +114,7 @@ namespace DriveCore.Services.Implementations
                 : ServiceResult<CustomerResponse>.Ok(MapCustomer(customer));
         }
 
+        /// <inheritdoc />
         public async Task<ServiceResult<CustomerDetailResponse>> GetCustomerDetailAsync(int id)
         {
             var customer = await _context.CustomerProfiles
@@ -115,6 +128,7 @@ namespace DriveCore.Services.Implementations
                 : ServiceResult<CustomerDetailResponse>.Ok(MapCustomerDetail(customer));
         }
 
+        /// <inheritdoc />
         public async Task<ServiceResult<VehicleResponse>> AddVehicleAsync(int customerId, CreateVehicleRequest request)
         {
             var customerExists = await _context.CustomerProfiles.AnyAsync(customer => customer.Id == customerId);
@@ -147,6 +161,11 @@ namespace DriveCore.Services.Implementations
             return ServiceResult<VehicleResponse>.Ok(MapVehicle(vehicle), "Vehicle added successfully.");
         }
 
+        #endregion
+
+        #region Customer Self-Service
+
+        /// <inheritdoc />
         public async Task<ServiceResult<CustomerResponse>> GetCurrentCustomerAsync(string userId)
         {
             var customer = await FindCustomerByUserIdAsync(userId);
@@ -156,6 +175,7 @@ namespace DriveCore.Services.Implementations
                 : ServiceResult<CustomerResponse>.Ok(MapCustomer(customer));
         }
 
+        /// <inheritdoc />
         public async Task<ServiceResult<CustomerResponse>> UpdateCurrentCustomerAsync(string userId, UpdateCustomerProfileRequest request)
         {
             var customer = await FindCustomerByUserIdAsync(userId);
@@ -173,6 +193,7 @@ namespace DriveCore.Services.Implementations
             return ServiceResult<CustomerResponse>.Ok(MapCustomer(customer), "Profile updated successfully.");
         }
 
+        /// <inheritdoc />
         public async Task<ServiceResult<VehicleResponse>> AddCurrentCustomerVehicleAsync(string userId, CreateVehicleRequest request)
         {
             var customer = await FindCustomerByUserIdAsync(userId);
@@ -206,6 +227,7 @@ namespace DriveCore.Services.Implementations
             return ServiceResult<VehicleResponse>.Ok(MapVehicle(vehicle), "Vehicle added successfully.");
         }
 
+        /// <inheritdoc />
         public async Task<ServiceResult<VehicleResponse>> UpdateCurrentCustomerVehicleAsync(string userId, int vehicleId, UpdateVehicleRequest request)
         {
             var customer = await FindCustomerByUserIdAsync(userId);
@@ -240,6 +262,7 @@ namespace DriveCore.Services.Implementations
             return ServiceResult<VehicleResponse>.Ok(MapVehicle(vehicle), "Vehicle updated successfully.");
         }
 
+        /// <inheritdoc />
         public async Task<ServiceResult<bool>> DeleteCurrentCustomerVehicleAsync(string userId, int vehicleId)
         {
             var customer = await FindCustomerByUserIdAsync(userId);
@@ -265,6 +288,7 @@ namespace DriveCore.Services.Implementations
             return ServiceResult<bool>.Ok(true, "Vehicle deleted successfully.");
         }
 
+        /// <inheritdoc />
         public async Task<ServiceResult<CustomerHistoryResponse>> GetCurrentCustomerHistoryAsync(string userId)
         {
             var customer = await _context.CustomerProfiles
@@ -332,6 +356,13 @@ namespace DriveCore.Services.Implementations
             });
         }
 
+        #endregion
+
+        #region Private Helpers
+
+        /// <summary>
+        /// Finds a customer profile by the owning application user identifier.
+        /// </summary>
         private async Task<CustomerProfile?> FindCustomerByUserIdAsync(string userId)
         {
             return await _context.CustomerProfiles
@@ -340,6 +371,9 @@ namespace DriveCore.Services.Implementations
                 .FirstOrDefaultAsync(profile => profile.UserId == userId);
         }
 
+        /// <summary>
+        /// Maps a customer profile to a lightweight customer response.
+        /// </summary>
         private static CustomerResponse MapCustomer(CustomerProfile customer)
         {
             return new CustomerResponse
@@ -355,6 +389,9 @@ namespace DriveCore.Services.Implementations
             };
         }
 
+        /// <summary>
+        /// Maps a customer profile to a detailed response including invoice summaries.
+        /// </summary>
         private static CustomerDetailResponse MapCustomerDetail(CustomerProfile customer)
         {
             return new CustomerDetailResponse
@@ -374,6 +411,9 @@ namespace DriveCore.Services.Implementations
             };
         }
 
+        /// <summary>
+        /// Maps an invoice to a summary item used in customer detail responses.
+        /// </summary>
         private static SalesInvoiceSummaryResponse MapInvoiceSummary(SalesInvoice invoice)
         {
             return new SalesInvoiceSummaryResponse
@@ -386,6 +426,9 @@ namespace DriveCore.Services.Implementations
             };
         }
 
+        /// <summary>
+        /// Maps a vehicle entity to its response model.
+        /// </summary>
         private static VehicleResponse MapVehicle(Vehicle vehicle)
         {
             return new VehicleResponse
@@ -398,5 +441,7 @@ namespace DriveCore.Services.Implementations
                 Color = vehicle.Color
             };
         }
+
+        #endregion
     }
 }
