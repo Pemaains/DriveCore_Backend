@@ -232,11 +232,7 @@ namespace DriveCore.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
@@ -245,32 +241,13 @@ namespace DriveCore.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
 
-                    b.Property<string>("PartNumber")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int?>("PreferredVendorId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("ReorderLevel")
-                        .HasColumnType("integer");
-
                     b.Property<int>("StockQuantity")
                         .HasColumnType("integer");
 
                     b.Property<decimal>("UnitPrice")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("numeric");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("PartNumber")
-                        .IsUnique();
-
-                    b.HasIndex("PreferredVendorId");
 
                     b.ToTable("Parts");
                 });
@@ -304,78 +281,6 @@ namespace DriveCore.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("PartRequests");
-                });
-
-            modelBuilder.Entity("DriveCore.Models.PurchaseInvoice", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("InvoiceNumber")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("Notes")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<DateTime>("PurchaseDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal>("TotalAmount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("VendorId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InvoiceNumber")
-                        .IsUnique();
-
-                    b.HasIndex("VendorId");
-
-                    b.ToTable("PurchaseInvoices");
-                });
-
-            modelBuilder.Entity("DriveCore.Models.PurchaseInvoiceItem", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("LineTotal")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("PartId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("PurchaseInvoiceId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("integer");
-
-                    b.Property<decimal>("UnitCost")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PartId");
-
-                    b.HasIndex("PurchaseInvoiceId");
-
-                    b.ToTable("PurchaseInvoiceItems");
                 });
 
             modelBuilder.Entity("DriveCore.Models.Review", b =>
@@ -555,50 +460,6 @@ namespace DriveCore.Migrations
                     b.ToTable("Vehicles");
                 });
 
-            modelBuilder.Entity("DriveCore.Models.Vendor", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Address")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("character varying(300)");
-
-                    b.Property<string>("ContactPerson")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.Property<string>("Phone")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Vendors");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
@@ -749,46 +610,6 @@ namespace DriveCore.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("DriveCore.Models.Part", b =>
-                {
-                    b.HasOne("DriveCore.Models.Vendor", "PreferredVendor")
-                        .WithMany()
-                        .HasForeignKey("PreferredVendorId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("PreferredVendor");
-                });
-
-            modelBuilder.Entity("DriveCore.Models.PurchaseInvoice", b =>
-                {
-                    b.HasOne("DriveCore.Models.Vendor", "Vendor")
-                        .WithMany()
-                        .HasForeignKey("VendorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Vendor");
-                });
-
-            modelBuilder.Entity("DriveCore.Models.PurchaseInvoiceItem", b =>
-                {
-                    b.HasOne("DriveCore.Models.Part", "Part")
-                        .WithMany()
-                        .HasForeignKey("PartId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("DriveCore.Models.PurchaseInvoice", "PurchaseInvoice")
-                        .WithMany("Items")
-                        .HasForeignKey("PurchaseInvoiceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Part");
-
-                    b.Navigation("PurchaseInvoice");
-                });
-
             modelBuilder.Entity("DriveCore.Models.SalesInvoice", b =>
                 {
                     b.HasOne("DriveCore.Models.CustomerProfile", "CustomerProfile")
@@ -924,11 +745,6 @@ namespace DriveCore.Migrations
             modelBuilder.Entity("DriveCore.Models.Part", b =>
                 {
                     b.Navigation("SalesInvoiceItems");
-                });
-
-            modelBuilder.Entity("DriveCore.Models.PurchaseInvoice", b =>
-                {
-                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("DriveCore.Models.SalesInvoice", b =>

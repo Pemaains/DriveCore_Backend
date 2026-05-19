@@ -15,13 +15,9 @@ namespace DriveCore.Data
         public DbSet<Review> Reviews => Set<Review>();
         public DbSet<LowStockNotification> LowStockNotifications { get; set; }
         public DbSet<LoyaltyProgram> LoyaltyPrograms { get; set; }
+        public DbSet<Part> Parts => Set<Part>();
         public DbSet<SalesInvoice> SalesInvoices => Set<SalesInvoice>();
         public DbSet<SalesInvoiceItem> SalesInvoiceItems => Set<SalesInvoiceItem>();
-        
-        public DbSet<Vendor> Vendors => Set<Vendor>();
-        public DbSet<Part> Parts => Set<Part>();
-        public DbSet<PurchaseInvoice> PurchaseInvoices => Set<PurchaseInvoice>();
-        public DbSet<PurchaseInvoiceItem> PurchaseInvoiceItems => Set<PurchaseInvoiceItem>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -97,25 +93,6 @@ namespace DriveCore.Data
             .WithMany(part => part.SalesInvoiceItems)
             .HasForeignKey(item => item.PartId)
             .OnDelete(DeleteBehavior.Restrict);
-        builder.Entity<Part>()
-            .HasIndex(p => p.PartNumber)
-            .IsUnique();
-
-        builder.Entity<PurchaseInvoice>()
-            .HasIndex(p => p.InvoiceNumber)
-            .IsUnique();
-
-        builder.Entity<Part>()
-            .HasOne(p => p.PreferredVendor)
-            .WithMany()
-            .HasForeignKey(p => p.PreferredVendorId)
-            .OnDelete(DeleteBehavior.SetNull);
-
-        builder.Entity<PurchaseInvoiceItem>()
-            .HasOne(i => i.PurchaseInvoice)
-            .WithMany(i => i.Items)
-            .HasForeignKey(i => i.PurchaseInvoiceId)
-            .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
