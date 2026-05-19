@@ -5,8 +5,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DriveCore.Services.Implementations;
 
+/// <summary>
+/// Provides financial and customer reporting queries for the API.
+/// </summary>
 public class ReportService(AppDbContext context) : IReportService
 {
+    #region Financial Reports
+
+    /// <summary>
+    /// Returns the financial report on a daily basis for the selected date.
+    /// </summary>
+    /// <param name="date">Nullable property to fetch the selected date's report. The default is the current UTC date.</param>
+    /// <returns>Response with daily financial reporting data.</returns>
     public async Task<FinancialReportResponse> GetDailyFinancialReportAsync(DateTime? date)
     {
         var selectedDate = (date ?? DateTime.UtcNow).Date;
@@ -35,6 +45,12 @@ public class ReportService(AppDbContext context) : IReportService
         return BuildFinancialReport("Daily", start, end, invoices, breakdown);
     }
 
+    /// <summary>
+    /// Returns the financial report on a monthly basis for the selected month and year.
+    /// </summary>
+    /// <param name="year">Nullable year value. Invalid values fall back to the current UTC year.</param>
+    /// <param name="month">Nullable month value. Invalid values fall back to the current UTC month.</param>
+    /// <returns>Response with monthly financial reporting data.</returns>
     public async Task<FinancialReportResponse> GetMonthlyFinancialReportAsync(int? year, int? month)
     {
         var now = DateTime.UtcNow;
@@ -67,6 +83,11 @@ public class ReportService(AppDbContext context) : IReportService
         return BuildFinancialReport("Monthly", start, end, invoices, breakdown);
     }
 
+    /// <summary>
+    /// Returns the financial report on a yearly basis for the selected year.
+    /// </summary>
+    /// <param name="year">Nullable year value. Invalid values fall back to the current UTC year.</param>
+    /// <returns>Response with yearly financial reporting data.</returns>
     public async Task<FinancialReportResponse> GetYearlyFinancialReportAsync(int? year)
     {
         var selectedYear = NormalizeYear(year, DateTime.UtcNow.Year);
@@ -95,6 +116,16 @@ public class ReportService(AppDbContext context) : IReportService
         return BuildFinancialReport("Yearly", start, end, invoices, breakdown);
     }
 
+    #endregion
+
+    #region Customer Reports
+
+    /// <summary>
+    /// Returns customer insight reports for regular customers, high spenders, and pending credits.
+    /// </summary>
+    /// <param name="topCount">The maximum number of records returned in each report section.</param>
+    /// <param name="overdueAfterDays">The threshold in days used to treat invoices as overdue.</param>
+    /// <returns>Aggregated customer report data for staff users.</returns>
     public async Task<CustomerReportResponse> GetCustomerReportAsync(int topCount, int overdueAfterDays)
     {
         var normalizedTopCount = Math.Clamp(topCount, 1, 100);
@@ -246,6 +277,16 @@ public class ReportService(AppDbContext context) : IReportService
         };
     }
 
+    #endregion
+
+    #region Private Methods
+
+    /// <summary>
+    /// Loads invoice metrics for the supplied reporting window.
+    /// </summary>
+    /// <param name="start">Inclusive start of the reporting range in UTC.</param>
+    /// <param name="end">Exclusive end of the reporting range in UTC.</param>
+    /// <returns>A lightweight list of invoice metric projections.</returns>
     private async Task<List<InvoiceMetric>> GetInvoiceMetricsAsync(DateTime start, DateTime end)
     {
         return await context.SalesInvoices
@@ -259,6 +300,9 @@ public class ReportService(AppDbContext context) : IReportService
             .ToListAsync();
     }
 
+    /// <summary>
+    /// Builds the final financial report payload from precomputed invoice metrics.
+    /// </summary>
     private static FinancialReportResponse BuildFinancialReport(
         string period,
         DateTime periodStart,
@@ -283,6 +327,9 @@ public class ReportService(AppDbContext context) : IReportService
         };
     }
 
+    /// <summary>
+    /// Builds a single breakdown row for a smaller financial reporting interval.
+    /// </summary>
     private static FinancialReportBreakdownResponse BuildBreakdown(
         string label,
         DateTime periodStart,
@@ -300,6 +347,9 @@ public class ReportService(AppDbContext context) : IReportService
         };
     }
 
+    /// <summary>
+    /// Normalizes a year filter to the supported reporting range.
+    /// </summary>
     private static int NormalizeYear(int? year, int fallbackYear)
     {
         return year is >= 2000 and <= 2100
@@ -307,10 +357,14 @@ public class ReportService(AppDbContext context) : IReportService
             : fallbackYear;
     }
 
+    /// <summary>
+    /// Represents a lightweight invoice projection used during report aggregation.
+    /// </summary>
     private sealed class InvoiceMetric
     {
         public DateTime CreatedAt { get; set; }
         public decimal TotalAmount { get; set; }
         public int ItemsSold { get; set; }
     }
+    #endregion
 }

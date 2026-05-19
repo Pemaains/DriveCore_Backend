@@ -146,6 +146,45 @@ namespace DriveCore.Services.Implementations
             return ServiceResult<StaffResponse>.Ok(MapStaff(staff), message);
         }
 
+        public async Task<ServiceResult<bool>> DeleteStaffAsync(string id, string? currentAdminUserId)
+        {
+            var staff = await FindStaffAsync(id);
+            if (staff is null)
+            {
+                return ServiceResult<bool>.Fail("Staff account was not found.");
+            }
+
+            if (staff.UserId == currentAdminUserId)
+            {
+                return ServiceResult<bool>.Fail("You cannot delete your own staff account.");
+            }
+
+            if (staff.User.Role == UserRole.Admin && staff.User.IsActive)
+            {
+                var hasAnotherActiveAdmin = await _context.StaffProfiles
+                    .Include(item => item.User)
+                    .AnyAsync(item =>
+                        item.UserId != id
+                        && item.User.Role == UserRole.Admin
+                        && item.User.IsActive);
+
+                if (!hasAnotherActiveAdmin)
+                {
+                    return ServiceResult<bool>.Fail("At least one active admin account is required.");
+                }
+            }
+
+            var deleteResult = await _userManager.DeleteAsync(staff.User);
+            if (!deleteResult.Succeeded)
+            {
+                return ServiceResult<bool>.Fail(
+                    "Could not delete staff account.",
+                    deleteResult.Errors.Select(error => error.Description));
+            }
+
+            return ServiceResult<bool>.Ok(true, "Staff account deleted successfully.");
+        }
+
         private async Task<StaffProfile?> FindStaffAsync(string userId)
         {
             return await _context.StaffProfiles
