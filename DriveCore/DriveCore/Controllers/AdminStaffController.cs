@@ -3,6 +3,7 @@ using DriveCore.Dtos.Response;
 using DriveCore.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace DriveCore.Controllers
 {
@@ -83,6 +84,21 @@ namespace DriveCore.Controllers
             }
 
             return Ok(result.Data);
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteStaff(string id)
+        {
+            var currentAdminUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var result = await _staffService.DeleteStaffAsync(id, currentAdminUserId);
+            if (!result.Success)
+            {
+                return result.Message == "Staff account was not found."
+                    ? NotFound(ToErrorResponse(result))
+                    : BadRequest(ToErrorResponse(result));
+            }
+
+            return Ok(new { result.Message });
         }
 
         private static ErrorResponse ToErrorResponse<T>(Services.ServiceResult<T> result)

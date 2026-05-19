@@ -12,5 +12,6 @@ namespace DriveCore.Services.Interfaces
         Task<ServiceResult<StaffResponse>> UpdateStaffAsync(string id, UpdateStaffRequest request);
         Task<ServiceResult<StaffResponse>> UpdateStaffRoleAsync(string id, UserRole role);
         Task<ServiceResult<StaffResponse>> UpdateStaffStatusAsync(string id, bool isActive);
+        Task<ServiceResult<bool>> DeleteStaffAsync(string id, string? currentAdminUserId);
     }
 }
