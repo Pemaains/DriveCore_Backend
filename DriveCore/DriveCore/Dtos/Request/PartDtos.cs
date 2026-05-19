@@ -1,12 +1,9 @@
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
-namespace DriveCore.Models
+namespace DriveCore.Dtos.Request
 {
-    public class Part
+    public class PartUpsertRequest
     {
-        public int Id { get; set; }
-
         [Required]
         [MaxLength(150)]
         public string Name { get; set; } = string.Empty;
@@ -18,18 +15,15 @@ namespace DriveCore.Models
         [MaxLength(500)]
         public string Description { get; set; } = string.Empty;
 
-        [Column(TypeName = "decimal(18,2)")]
+        [Range(0, double.MaxValue)]
         public decimal UnitPrice { get; set; }
 
+        [Range(0, int.MaxValue)]
         public int StockQuantity { get; set; }
 
+        [Range(0, int.MaxValue)]
         public int ReorderLevel { get; set; } = 10;
 
         public int? PreferredVendorId { get; set; }
-        public Vendor? PreferredVendor { get; set; }
-
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-        public ICollection<SalesInvoiceItem> SalesInvoiceItems { get; set; } = new List<SalesInvoiceItem>();
     }
 }
