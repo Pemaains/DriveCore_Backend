@@ -1,5 +1,6 @@
 using DriveCore.Data;
 using DriveCore.Dtos.Response;
+using DriveCore.Middleware;
 using DriveCore.Models;
 using DriveCore.Services;
 using DriveCore.Services.Implementations;
@@ -141,6 +142,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseCors("AllowReactApp");
 app.UseAuthentication();
 app.UseAuthorization();
